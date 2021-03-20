@@ -11,19 +11,7 @@ class Book{
 // UI class: Handle UI tasks
 class UI{
     static displayBook(){
-        const StoredBooks = [
-            {
-                title: "Book One",
-                author: "John Doe",
-                isbn: "3434343434343434"
-            },
-            {
-                title: "Book Two",
-                author: "Jane Doe",
-                isbn: "4545454545454545"
-            }
-        ];
-        const books = StoredBooks;
+        const books = Storage.getBooks();
 
         books.forEach((book) => UI.addBookToList(book));
     }
@@ -46,7 +34,9 @@ class UI{
         if(target.classList.contains('delete')){
             // targeting the parent element, the "tr" tag
             target.parentElement.parentElement.remove();
+            return 1;
         }
+        else return 0;
     }
 
     static showAlert(message, className){
@@ -76,7 +66,38 @@ class UI{
 
 // Store class: Handles Storage
 class Storage{
-    
+    static getBooks(){
+        let books;
+        if(localStorage.getItem('books') === null){
+            books = [];
+        }
+        else{
+            books = JSON.parse(localStorage.getItem('books'));
+        }
+
+        return books;
+    }
+
+    static addBook(book){
+        const books = Storage.getBooks();
+
+        books.push(book);
+
+        localStorage.setItem('books', JSON.stringify(books));
+    }
+
+    static removeBook(isbn){
+        const books = Storage.getBooks();
+
+        books.forEach((book, index) => {
+            if(book.isbn === isbn){
+                books.splice(index, 1);
+            }
+        });
+
+        localStorage.setItem('books', JSON.stringify(books));
+    }
+
 }
 
 // Events to desplay books
@@ -103,6 +124,9 @@ document.querySelector('#book-form').addEventListener('submit', (e) => {
         // add book to UI
         UI.addBookToList(book);
 
+        // add book to the localStorage
+        Storage.addBook(book);
+
         // Show success message
         UI.showAlert("You have successfully put in a new book!", "success");
 
@@ -113,9 +137,17 @@ document.querySelector('#book-form').addEventListener('submit', (e) => {
 });
 
 // Events to remove a book
-document.querySelector('#book-form').addEventListener('click', (e) =>{
-    UI.deleteBook(e.target);
+document.querySelector('#book-list').addEventListener('click', (e) =>{
+    // remove book from UI
+    const err = UI.deleteBook(e.target);
+    
+    // remove book from Storage
+    Storage.removeBook(e.target.parentElement.previousElementSibling.textContent);
 
-    // Show info message
-    UI.showAlert("You have successfully removed a book!", "info");
+    if(err === 1){
+        // Show info message
+        UI.showAlert("You have successfully removed a book!", "info");
+    }
+    else UI.showAlert("Something went wrong when removing this book", "danger");
+    
 });
